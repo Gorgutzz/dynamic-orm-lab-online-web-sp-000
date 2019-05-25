@@ -17,5 +17,10 @@ class InteractiveRecord
     column_names.flatten.uniq
   end
 
+  def initialize(options={})
+    options.each{ |key, value| self.send("#{key}=", value) }
+  end
+
+
 
 end
