@@ -8,9 +8,11 @@ class InteractiveRecord
   end
 
   def self.column_names
-    sql = "PRAGMA table_info(#{self.table_name})"
+    sql = "PRAGMA table_info('#{table_name}')"
+
     table_info = DB[:conn].execute(sql)
     column_names = []
+
     table_info.map do |column|
       column_names << column["name"]
     end
@@ -18,8 +20,8 @@ class InteractiveRecord
   end
 
   def initialize(options={})
-    options.each do |key, value|
-      self.send("#{key}=", value)
+    options.each do |property, value|
+      self.send("#{property}=", value)
     end
   end
 
@@ -42,20 +44,23 @@ class InteractiveRecord
 
   def save
     sql = "INSERT INTO #{table_name_for_insert} (#{col_names_for_insert}) VALUES (#{values_for_insert})"
+
     DB[:conn].execute(sql)
-    @id = DB[:conn].execute("SELECT last_insert_rowid() FROM #{table_name_for_insert}")[0][0]
+    @id = DB[:conn].execute("SELECT last_insert_rowid();")[0][0]
   end
 
   def self.find_by_name(name)
     sql = "SELECT * FROM #{self.table_name} WHERE name = ?"
+
     DB[:conn].execute(sql, name)
   end
 
   def self.find_by(attribute)
     column_name = attribute.keys[0]
     value_name = attribute.values[0]
+
     sql = "SELECT * FROM #{self.table_name} WHERE #{column_name} = ?"
+
     DB[:conn].execute(sql, value_name)
   end
-
 end
