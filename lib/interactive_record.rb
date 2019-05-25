@@ -8,18 +8,21 @@ class InteractiveRecord
   end
 
   def self.column_names
-    sql = "PRAGMA table_info(#{self.table_name})"
+    DB[:conn].results_as_hash = true
+
+    sql = "pragma table_info('#{table_name}')"
+
     table_info = DB[:conn].execute(sql)
     column_names = []
-    table_info.map do |column|
-      column_names << column["name"]
+    table_info.each do |row|
+      column_names << row["name"]
     end
-    column_names.flatten.uniq
+    column_names.compact
   end
 
   def initialize(options={})
-    options.each do |key, value|
-      self.send("#{key}=", value)
+    options.each do |property, value|
+      self.send("#{property}=", value)
     end
   end
 
@@ -28,14 +31,13 @@ class InteractiveRecord
   end
 
   def col_names_for_insert
-    self.class.column_names.delete_if {|column| column == "id"}.join(", ")
+    self.class.column_names.delete_if {|col| col == "id"}.join(", ")
   end
 
   def values_for_insert
     values = []
-
-    self.class.column_names.each do |name|
-      values << "'#{send(name)}'" unless send(name) == nil
+    self.class.column_names.each do |col_name|
+      values << "'#{send(col_name)}'" unless send(col_name).nil?
     end
     values.join(", ")
   end
@@ -51,11 +53,11 @@ class InteractiveRecord
     DB[:conn].execute(sql, name)
   end
 
-  def self.find_by(attribute)
-    column_name = attribute.keys[0]
-    value_name = attribute.values[0]
-    sql = "SELECT * FROM #{self.table_name} WHERE #{column_name} = ?"
-    DB[:conn].execute(sql, value_name)
+  def self.find_by(options = {})
+
+    sql = "SELECT * FROM #{self.table_name} WHERE #{options.keys.first.to_s} = '#{options[options.keys.first]}'"
+
+    DB[:conn].execute(sql)
   end
 
 end
